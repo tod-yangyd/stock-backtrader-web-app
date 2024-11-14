@@ -8,3 +8,4 @@ streamlit
 streamlit_echarts
 
 jqdatasdk
+pandas_ta
