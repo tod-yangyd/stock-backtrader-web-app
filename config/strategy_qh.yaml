@@ -1,0 +1,54 @@
+#Ma:
+#  -
+#    name: maperiod
+#    type: int
+#    min: 10
+#    max: 31
+#    step: 1
+#
+#MaCross:
+#  -
+#    name: fast_length
+#    type: int
+#    min: 1
+#    max: 11
+#    step: 5
+#  -
+#    name: slow_length
+#    type: int
+#    min: 25
+#    max: 35
+#    step: 5
+
+
+
+
+EMaCross:
+  -
+    name: emaperiod
+    type: int
+    ema1: 13
+    ema2: 30
+    ema3: 60
+    ema4: 120
+
+  -
+    name: trade_config
+    type: float
+    trade_cash_per: 0.3
+    trade_per_time: 0.3
+
+Test:
+  -
+    name: emaperiod
+    type: int
+    ema1: 13
+    ema2: 30
+    ema3: 60
+    ema4: 120
+  -
+    name: trade_config
+    type: float
+    trade_cash_per: 0.3
+    trade_per_time: 0.3
+
