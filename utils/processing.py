@@ -2,9 +2,7 @@ import datetime
 
 import akshare as ak
 import backtrader  as bt
-#输出显示优化
-from backtrader_plotting import Bokeh
-from backtrader_plotting.schemes import Tradimo
+
 
 import backtrader.analyzers as btanalyzers
 import pandas as pd

@@ -8,5 +8,3 @@ streamlit
 streamlit_echarts
 
 jqdatasdk
-backtrader_plotting
-matplot
