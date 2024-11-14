@@ -12,6 +12,7 @@ def split_data(df: pd.DataFrame):
     df["index"] = df.index
     df["rise"] = df[["开盘", "收盘"]].apply(lambda x: 1 if x[0] > x[1] else -1, axis=1)
     y_vol = df[["index", "成交量", "rise"]].values.tolist()
+    #print("成交量数据： ", y_vol)
     return x_data, y_data, df_close, y_vol
 
 
@@ -126,6 +127,7 @@ def draw_pro_kline(df: pd.DataFrame):
         )
         .set_global_opts(xaxis_opts=opts.AxisOpts(type_="category"))
     )
+
 
     bar = (
         Bar()

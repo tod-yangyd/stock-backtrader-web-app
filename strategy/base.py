@@ -1,4 +1,6 @@
 import backtrader as bt
+import pandas as pd
+
 from utils.logs import LOGGER
 
 
@@ -7,6 +9,7 @@ class BaseStrategy(bt.Strategy):
 
     _name = "base"
     params = (("printlog", False),)
+
 
     def log(self, txt, dt=None, doprint=False):
         """Logging function fot this strategy"""
@@ -36,7 +39,9 @@ class BaseStrategy(bt.Strategy):
                     % (order.executed.price, order.executed.value, order.executed.comm)
                 )
 
+
             self.bar_executed = len(self)
+
 
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
             self.log("Order Canceled/Margin/Rejected")

@@ -1,8 +1,12 @@
 akshare==1.4.27
-backtrader==1.9.76.123
-pandas==1.4.1
+backtrader
+pandas
 pydantic==1.9.0
 pyecharts==1.9.1
 PyYAML==6.0
-streamlit==1.5.1
-streamlit_echarts==0.4.0
+streamlit
+streamlit_echarts
+
+jqdatasdk
+backtrader_plotting
+matplot

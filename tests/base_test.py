@@ -48,6 +48,7 @@ class StrategyTest(unittest.TestCase):
         print(self.result)
 
 
+@st.cache_data
 def run_back_trader(
     cerebro: bt.Cerebro, strategy: BaseStrategy, **kwargs
 ) -> pd.DataFrame:
