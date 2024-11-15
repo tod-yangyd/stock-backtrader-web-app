@@ -37,7 +37,9 @@ def calculate_ema(day_count: int, df: pd.DataFrame):
     result =  df.ewm(span=day_count,adjust=False).mean()
     #result = ta.ema(df, length=day_count)
 
-    return  result.dropna(axis=0, how='any').round(2)
+    # 移除前day_count行的不准确数据
+    result = result.iloc[day_count:]
+    return  result.dropna(axis=0, how='any').round(4)
 
 def draw_pro_kline_fut(period:str,ema_params:dict,df: pd.DataFrame):
     x_data, y_data, df_close, y_vol, hm_data, hm_x_data, hm_y_data = split_data(df)
@@ -117,29 +119,11 @@ def draw_pro_kline_fut(period:str,ema_params:dict,df: pd.DataFrame):
         )
     )
 
-    # 均线图
-    line = (
+    ema_line_1 = (
         Line()
-        .add_xaxis(xaxis_data=x_data)
+        .add_xaxis(xaxis_data=x_data[ema_params["ema1"]:])
         .add_yaxis(
-            series_name="MA"+str(ema_params["ema1"]),
-            y_axis=calculate_ma(ema_params["ema1"], df_close),
-            is_smooth=True,
-            is_hover_animation=False,
-            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
-            label_opts=opts.LabelOpts(is_show=False),
-        )
-
-        .set_global_opts(xaxis_opts=opts.AxisOpts(type_="category"))
-    )
-
-    # ema移动平均线
-    ema_line = (
-        Line()
-        .add_xaxis(xaxis_data=x_data)
-        .add_yaxis(
-            series_name="EMA"+str(ema_params["ema1"]),
-
+            series_name="EMA" + str(ema_params["ema1"]),
             y_axis=calculate_ema(ema_params["ema1"], df_close),
             # 是否平滑显示
             is_smooth=True,
@@ -150,6 +134,11 @@ def draw_pro_kline_fut(period:str,ema_params:dict,df: pd.DataFrame):
             itemstyle_opts=opts.ItemStyleOpts(color='yellow'),
             label_opts=opts.LabelOpts(is_show=False),
         )
+        .set_global_opts(xaxis_opts=opts.AxisOpts(type_="category"))
+    )
+    ema_line_2 = (
+        Line()
+        .add_xaxis(xaxis_data=x_data[ema_params["ema2"]:])
         .add_yaxis(
             series_name="EMA" + str(ema_params["ema2"]),
             y_axis=calculate_ema(ema_params["ema2"], df_close),
@@ -159,6 +148,11 @@ def draw_pro_kline_fut(period:str,ema_params:dict,df: pd.DataFrame):
             label_opts=opts.LabelOpts(is_show=False),
             itemstyle_opts=opts.ItemStyleOpts(color='green'),
         )
+        .set_global_opts(xaxis_opts=opts.AxisOpts(type_="category"))
+    )
+    ema_line_3 = (
+        Line()
+        .add_xaxis(xaxis_data=x_data[ema_params["ema3"]:])
         .add_yaxis(
             series_name="EMA" + str(ema_params["ema3"]),
             y_axis=calculate_ema(ema_params["ema3"], df_close),
@@ -168,6 +162,11 @@ def draw_pro_kline_fut(period:str,ema_params:dict,df: pd.DataFrame):
             label_opts=opts.LabelOpts(is_show=False),
             itemstyle_opts=opts.ItemStyleOpts(color='purple'),
         )
+        .set_global_opts(xaxis_opts=opts.AxisOpts(type_="category"))
+    )
+    ema_line_4 = (
+        Line()
+        .add_xaxis(xaxis_data=x_data[ema_params["ema4"]:])
         .add_yaxis(
             series_name="EMA" + str(ema_params["ema4"]),
             y_axis=calculate_ema(ema_params["ema4"], df_close),
@@ -179,7 +178,6 @@ def draw_pro_kline_fut(period:str,ema_params:dict,df: pd.DataFrame):
         )
         .set_global_opts(xaxis_opts=opts.AxisOpts(type_="category"))
     )
-
     # 成交量柱状图
     bar = (
         Bar()
@@ -233,7 +231,11 @@ def draw_pro_kline_fut(period:str,ema_params:dict,df: pd.DataFrame):
     )
 
     # Kline And Line
-    overlap_kline_line = kline.overlap(ema_line)
+
+    overlap_kline_line = kline.overlap(ema_line_1)
+    overlap_kline_line = overlap_kline_line.overlap(ema_line_2)
+    overlap_kline_line = overlap_kline_line.overlap(ema_line_3)
+    overlap_kline_line = overlap_kline_line.overlap(ema_line_4)
 
     # Grid Overlap + Bar
 

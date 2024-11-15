@@ -10,10 +10,11 @@ class EMaCrossStrategy(BaseStrategy):
     params = (
         ("printlog", False),
         ("emaperiod", {"ema1": 13, "ema2": 13, "ema3": 13, "ema4": 13}),
-        ("trade_config",{"trade_cash_per":0.3,"trade_per_time":0.3})
+        ("trade_config",{"trade_cash_per":0.2,"trade_per_time":0.2})
     )
-    trade_log = pd.DataFrame(columns=['datetime', '收盘价', '成交价', '持仓均价', '持仓数', '策略触发原因', '持仓浮盈', '总资金'])
-
+    trade_log = pd.DataFrame(columns=['datetime', '收盘价', '成交价', '持仓均价', '持仓数', '策略触发原因', '持仓浮盈',
+                                      '总资金'])
+    ema_df = pd.DataFrame(columns=['datetime','EMA1', 'EMA2', 'EMA3', 'EMA4'])
     def __init__(self):
         # Keep a reference to the "close" line in the data[0] dataseries
         print("策略参数： ", self.p.trade_config["trade_cash_per"], " and ", self.p.trade_config["trade_per_time"])
@@ -25,13 +26,14 @@ class EMaCrossStrategy(BaseStrategy):
         self.buycomm = None
 
         # Add a MovingAverageSimple indicator
-        self.ema1 = bt.ind.EMA(self.dataclose, period=self.p.emaperiod["ema1"])
+        self.ema1 = bt.ind.ExponentialMovingAverage(self.dataclose, period=self.p.emaperiod["ema1"])
         self.ema2 = bt.ind.EMA(self.dataclose,period=self.p.emaperiod["ema2"])
         self.ema3 = bt.ind.EMA(self.dataclose,period=self.p.emaperiod["ema3"])
         self.ema4 = bt.ind.EMA(self.dataclose,period=self.p.emaperiod["ema4"])
 
-        info = self.broker.getcommissioninfo(self.datas[0])
-
+        info = self.broker.getcommissioninfo(self.data0)
+        print("MUL: ",info.p.mult)
+        print("MARGIN: ", info.p.margin)
         contract_margin = info.p.margin
         self.contract_mult = info.p.mult
 
@@ -83,7 +85,22 @@ class EMaCrossStrategy(BaseStrategy):
     def next(self):
         # Simply log the closing price of the series from the reference
         self.log("Close, %.2f" % self.dataclose[0])
+        #print("ema1: ",self.ema1[0])
 
+        ema_data = [
+            [datetime.datetime.combine(self.data0.lines.datetime.date(0), self.data0.lines.datetime.time()),
+            self.ema1[0],
+            self.ema2[0],
+            self.ema3[0],
+            self.ema4[0]
+             ]
+        ]
+        ema_frame = pd.DataFrame(ema_data,
+                                  columns=['datetime','EMA1', 'EMA2', 'EMA3', 'EMA4'])
+
+        self.ema_df = pd.concat(
+            [self.ema_df,ema_frame],
+            ignore_index=True)
         """
         print("交易日期：%s  交易时段%s  该时段开盘价： %d 该时段收盘价： %d" %
                 (
@@ -221,19 +238,22 @@ class EMaCrossStrategy(BaseStrategy):
             #+self.self.data0.lines.datetime.time()
             pos = self.getposition()
             trade_data = [
-                    [datetime.datetime.combine(self.data0.lines.datetime.date(0),self.data0.lines.datetime.time()),
-                    #pos.adjbase
-                    self.data0.lines.close[0],
-                    order.executed.price,
-                    pos.price,
-                    pos.size,
-                    self.triger_reason,
-                    pos.size * (pos.adjbase - pos.price) * self.contract_mult,
-                    self.broker.getvalue()
+                [datetime.datetime.combine(self.data0.lines.datetime.date(0),self.data0.lines.datetime.time()),
+                #pos.adjbase
+                self.data0.lines.close[0],
+                order.executed.price,
+                pos.price,
+                pos.size,
+                self.triger_reason,
+                pos.size * (pos.adjbase - pos.price) * self.contract_mult,
+                self.broker.getvalue()
+
+
                     ]
             ]
             data_frame = pd.DataFrame(trade_data,
-                                      columns=['datetime', '收盘价', '成交价', '持仓均价', '持仓数', '策略触发原因', '持仓浮盈', '总资金'])
+                                      columns=['datetime', '收盘价', '成交价', '持仓均价', '持仓数', '策略触发原因', '持仓浮盈',
+                                               '总资金'])
 
             self.trade_log=pd.concat(
                 [self.trade_log,data_frame],

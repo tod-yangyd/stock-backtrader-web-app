@@ -77,10 +77,11 @@ def main_new():
         st.subheader("Kline")
         (kline,positon) = draw_pro_kline_fut(period=jq_params["period"], ema_params=params["emaperiod"], df=future_df)
         st_pyecharts(kline, height="600px")
-        st_pyecharts(positon)
+        if jq_params["market_type"] =="主力连续":
+            st_pyecharts(positon)
 
-        LOGGER.info(f"akshare: {jq_params}")
-        LOGGER.info(f"backtrader: {backtrader_params}")
+        LOGGER.info(f"jq_config: {jq_params}")
+        LOGGER.info(f"backtrader_config: {backtrader_params}")
         backtrader_params.update(
             {
                 "future_df": future_df.iloc[:, :7],
@@ -89,11 +90,14 @@ def main_new():
                 "contract_multiplier": contract_multiplier,
             }
         )
-        par_df = run_backtrader_new(**backtrader_params)
-        # st.dataframe(par_df.style.highlight_max(subset=par_df.columns[-3:]))
-        # bar = draw_result_bar(par_df)
-        st.subheader("策略结果", divider=True)
-        st.dataframe(par_df, height=500, hide_index=True)
+        par_df,ema_df = run_backtrader_new(**backtrader_params)
+
+        st.subheader("策略结果&回测系统EMA值记录", divider=True)
+        col_res, col_ema = st.columns(2)
+        with col_res:
+            st.dataframe(par_df, height=500, hide_index=True)
+        with col_ema:
+            st.dataframe(ema_df, height=500, hide_index=True)
 
 
 

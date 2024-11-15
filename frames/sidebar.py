@@ -51,11 +51,11 @@ def jqshare_selector_ui() -> dict:
     :return: dict
     """
     st.sidebar.markdown("# JQshare Config")
-    market_type = st.sidebar.selectbox("行情类型",("主力连续","单品种"))
+    market_type = st.sidebar.selectbox("行情类型",("单品种","主力连续"))
     if market_type == "主力连续":
         symbol = st.sidebar.text_input("合约名称（ex. FG）")
     else:
-        symbol = st.sidebar.text_input("合约名称（ex. FG2501）")
+        symbol = st.sidebar.text_input("合约名称（ex. fg2501）")
     period = st.sidebar.selectbox("行情数据间隔", ("15m","1m","5m"))
     start_date = st.sidebar.date_input("start date(试用版最早获取15个月以来的数据)",datetime.date.today() -datetime.timedelta(days=15*31),
                                        min_value=datetime.date.today() -datetime.timedelta(days=15*31))

@@ -189,7 +189,7 @@ def run_backtrader_new(
         'code'
     ]
 
-    print("backtrader导入期货数据：" ,future_df)
+    #print("backtrader导入期货数据：" ,future_df)
 
     data = bt.feeds.PandasData(dataname=future_df, fromdate=start_date, todate=end_date)
 
@@ -226,9 +226,13 @@ def run_backtrader_new(
     #cerebro.optstrategy(strategy_cli, **_strategy.params)
     results = cerebro.run(optreturn=False)
 
-    print(type(results[0]))
+
+
+
+
 
     back_df = results[0].trade_log
+    ema_df = results[0].ema_df
 
     """
     par_list = []
@@ -248,4 +252,4 @@ def run_backtrader_new(
     columns.extend(["return", "dd", "sharpe"])
     par_df = pd.DataFrame(par_list, columns=columns)
     """
-    return back_df
+    return back_df,ema_df
