@@ -15,7 +15,7 @@ def split_data(df: pd.DataFrame):
     df_remake["index"] = df_remake.index
     df_remake["rise"] = df_remake[["open", "close"]].apply(lambda x: 1 if x[0] > x[1] else -1, axis=1)
     y_vol = df_remake[["index", "volume", "rise"]].values.tolist()
-    print("成交量数据： ",y_vol)
+    #print("成交量数据： ",y_vol)
 
     # 索引重置并转为date格式，方便统计
     res = df.reset_index()
@@ -37,7 +37,7 @@ def calculate_ema(day_count: int, df: pd.DataFrame):
     result =  df.ewm(span=day_count,adjust=False).mean()
     #result = ta.ema(df, length=day_count)
 
-    return  result.dropna(axis=0, how='any').astype(int)
+    return  result.dropna(axis=0, how='any').round(2)
 
 def draw_pro_kline_fut(period:str,ema_params:dict,df: pd.DataFrame):
     x_data, y_data, df_close, y_vol, hm_data, hm_x_data, hm_y_data = split_data(df)
