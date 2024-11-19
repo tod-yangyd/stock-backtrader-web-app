@@ -17,7 +17,7 @@ class EMaCrossStrategy(BaseStrategy):
     ema_df = pd.DataFrame(columns=['datetime','EMA1', 'EMA2', 'EMA3', 'EMA4'])
     def __init__(self):
         # Keep a reference to the "close" line in the data[0] dataseries
-        print("策略参数： ", self.p.trade_config["trade_cash_per"], " and ", self.p.trade_config["trade_per_time"])
+        print("策略参数： ", self.p.emaperiod,self.p.trade_config["trade_cash_per"], " and ", self.p.trade_config["trade_per_time"])
 
         self.dataclose = self.datas[0].close
         # To keep track of pending orders and buy price/commission
@@ -29,7 +29,7 @@ class EMaCrossStrategy(BaseStrategy):
         self.ema1 = bt.ind.ExponentialMovingAverage(self.dataclose, period=self.p.emaperiod["ema1"])
         self.ema2 = bt.ind.EMA(self.dataclose,period=self.p.emaperiod["ema2"])
         self.ema3 = bt.ind.EMA(self.dataclose,period=self.p.emaperiod["ema3"])
-        self.ema4 = bt.ind.EMA(self.dataclose,period=self.p.emaperiod["ema4"])
+        self.ema4 = bt.talib.EMA(self.dataclose,period=self.p.emaperiod["ema4"])
 
         info = self.broker.getcommissioninfo(self.data0)
         print("MUL: ",info.p.mult)
@@ -87,6 +87,7 @@ class EMaCrossStrategy(BaseStrategy):
         self.log("Close, %.2f" % self.dataclose[0])
         #print("ema1: ",self.ema1[0])
 
+
         ema_data = [
             [datetime.datetime.combine(self.data0.lines.datetime.date(0), self.data0.lines.datetime.time()),
             self.ema1[0],
@@ -140,9 +141,9 @@ class EMaCrossStrategy(BaseStrategy):
 
         # 如果有持仓，判断是反向开仓、继续开仓还是止盈还是回踩补仓
         else:
-            # 如果持仓方向与bar的收盘价方向不一致，反向开仓，否则持仓方向不变
-            if ((self.getposition().size > 0 and self.data0.lines.close[0] > self.ema4 ) or
-                        (self.getposition().size < 0 and self.data0.lines.close[0] < self.ema4 )) :
+
+            if ((self.getposition().size > 0 and self.crossover_em4 >=0 ) or
+                        (self.getposition().size < 0 and self.crossover_em4 <= 0 )) :
                 #判断是继续开仓还是止盈还是补仓
                 # 如果收盘价穿过ema2，且ema2和ema3、ema4的方向一致，则止盈1/3
                 if ((self.getposition().size > 0 and self.data0.lines.close[0] < self.ema2 and self.ema2>self.ema3 and self.ema3>self.ema4) or
@@ -197,6 +198,7 @@ class EMaCrossStrategy(BaseStrategy):
                     else:
                         self.order = self.order_target_size_yyd(target_size= - self.start_signal * self.trade_per_vol,type='加仓')
                     self.last_opened_close = self.data0.lines.close[0]
+
             # 反向开仓
             else:
                 #print("************触发反向开仓")
@@ -211,6 +213,7 @@ class EMaCrossStrategy(BaseStrategy):
                 self.triger_ProfitOrLoss = False
                 # 建仓收盘价
                 self.last_opened_close = self.data0.lines.close[0]
+
 
     def notify_order(self, order):
         if order.status in [order.Submitted, order.Accepted]:
