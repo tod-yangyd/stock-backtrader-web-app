@@ -29,7 +29,7 @@ class EMaCrossStrategy(BaseStrategy):
         self.ema1 = bt.ind.ExponentialMovingAverage(self.dataclose, period=self.p.emaperiod["ema1"])
         self.ema2 = bt.ind.EMA(self.dataclose,period=self.p.emaperiod["ema2"])
         self.ema3 = bt.ind.EMA(self.dataclose,period=self.p.emaperiod["ema3"])
-        self.ema4 = bt.talib.EMA(self.dataclose,period=self.p.emaperiod["ema4"])
+        self.ema4 = bt.ind.EMA(self.dataclose,period=self.p.emaperiod["ema4"])
 
         info = self.broker.getcommissioninfo(self.data0)
         print("MUL: ",info.p.mult)
