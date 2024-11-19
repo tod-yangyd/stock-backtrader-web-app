@@ -39,7 +39,7 @@ def calculate_ema(day_count: int, df: pd.DataFrame):
 
     # 移除前day_count行的不准确数据
     result = result.iloc[day_count:]
-    return  result.dropna(axis=0, how='any').round(4)
+    return  result.dropna(axis=0, how='any').round(2)
 
 def draw_pro_kline_fut(period:str,ema_params:dict,df: pd.DataFrame):
     x_data, y_data, df_close, y_vol, hm_data, hm_x_data, hm_y_data = split_data(df)
