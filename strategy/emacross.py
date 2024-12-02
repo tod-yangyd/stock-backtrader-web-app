@@ -187,7 +187,7 @@ class EMaCrossStrategy(BaseStrategy):
 
         # 如果有持仓，判断是反向开仓、继续开仓还是止盈还是回踩补仓
         else:
-            print(time, "叉位方向： ",self.ema_cross())
+
             # 仓位方向不变
             if ((self.getposition().size > 0 and self.ema_cross() >= 0) or
                     (self.getposition().size < 0 and self.ema_cross() <= 0)):
