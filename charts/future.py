@@ -117,7 +117,8 @@ def draw_pro_kline_fut(period:str,ema_params:dict,df: pd.DataFrame):
 
     ema_line_1 = (
         Line()
-        .add_xaxis(xaxis_data=x_data[ema_params["ema1"]:])
+        #.add_xaxis(xaxis_data=x_data[ema_params["ema1"]:])
+        .add_xaxis(xaxis_data=x_data)
         .add_yaxis(
             series_name="EMA" + str(ema_params["ema1"]),
             y_axis=calculate_ema(day_count=ema_params["ema1"], close=df_close),
@@ -134,7 +135,7 @@ def draw_pro_kline_fut(period:str,ema_params:dict,df: pd.DataFrame):
     )
     ema_line_2 = (
         Line()
-        .add_xaxis(xaxis_data=x_data[ema_params["ema2"]:])
+        .add_xaxis(xaxis_data=x_data)
         .add_yaxis(
             series_name="EMA" + str(ema_params["ema2"]),
             y_axis=calculate_ema(day_count=ema_params["ema2"], close=df_close),
@@ -148,7 +149,7 @@ def draw_pro_kline_fut(period:str,ema_params:dict,df: pd.DataFrame):
     )
     ema_line_3 = (
         Line()
-        .add_xaxis(xaxis_data=x_data[ema_params["ema3"]:])
+        .add_xaxis(xaxis_data=x_data)
         .add_yaxis(
             series_name="EMA" + str(ema_params["ema3"]),
             y_axis=calculate_ema(day_count=ema_params["ema3"], close=df_close),
@@ -162,7 +163,7 @@ def draw_pro_kline_fut(period:str,ema_params:dict,df: pd.DataFrame):
     )
     ema_line_4 = (
         Line()
-        .add_xaxis(xaxis_data=x_data[ema_params["ema4"]:])
+        .add_xaxis(xaxis_data=x_data)
         .add_yaxis(
             series_name="EMA" + str(ema_params["ema4"]),
             y_axis=calculate_ema(day_count=ema_params["ema4"], close=df_close),
