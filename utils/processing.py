@@ -40,6 +40,7 @@ def gen_future_df(jq_params: dict) -> tuple:
     my_bar = st.progress(0, text='正在载入行情数据..')
     jqdata = JQSDK.Future_Method()
 
+
     (margin_buy, contract_multiplier) = jqdata.get_commissionandmargin(fut_code=jq_params['symbol'], date=jq_params['end_date'],
                                                                        market_type=jq_params['market_type'])
     res = pd.DataFrame(columns=['open', 'high', 'low', 'close', 'volume', 'openinterest', 'code'])
@@ -151,7 +152,20 @@ def load_strategy(yaml_file: str) -> dict:
     return strategy
 
 
-@st.cache_data
+class PandasDataPlus(bt.feeds.PandasData):
+    lines = ('ema1','ema2','ema3','ema4',)  # 要添加的列名
+    # 设置 line 在数据源上新增的位置
+    params = (
+        #('turnover', -1),  # turnover对应传入数据的列名，这个-1会自动匹配backtrader的数据类与原有pandas文件的列名
+        ('ema1', -1),
+        ('ema2', -1),
+        ('ema3', -1),
+        ('ema4', -1),
+        # 如果是个大于等于0的数，比如8，那么backtrader会将原始数据下标8(第9列，下标从0开始)的列认为是turnover这一列
+    )
+
+
+
 def run_backtrader_new(
     future_df: pd.DataFrame,
     start_date: datetime.datetime,
@@ -159,6 +173,7 @@ def run_backtrader_new(
     start_cash: int,
     commission_fee: float,
     slippage: float,
+    coc: bool,
     margin_buy: int,
     contract_multiplier: int,
     _strategy: StrategyBase,
@@ -186,16 +201,21 @@ def run_backtrader_new(
         "close",
         "volume",
         'open_interest',
-        'code'
+        'code',
+        'ema1',
+        'ema2',
+        'ema3',
+        'ema4'
     ]
 
     #print("backtrader导入期货数据：" ,future_df)
 
-    data = bt.feeds.PandasData(dataname=future_df, fromdate=start_date, todate=end_date)
+    data = PandasDataPlus(dataname=future_df, fromdate=start_date, todate=end_date)
 
 
 
     cerebro = bt.Cerebro()
+    cerebro.broker.set_coc(coc)
     cerebro.broker.setcommission(commission=commission_fee, #交易手续费
                                  stocklike=False, #股票则填True
                                  commtype=bt.CommInfoBase.COMM_PERC,# 按比例收手续费

@@ -58,6 +58,8 @@ class Future_Method():
         return fut_df
 
 
+
+
     def get_main(self,fut_code,start_date='2023-08-05',end_date='2024-08-11'):
         """
         获取品种的日期范围内的主力合约

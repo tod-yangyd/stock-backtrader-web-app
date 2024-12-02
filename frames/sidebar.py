@@ -72,7 +72,6 @@ def jqshare_selector_ui() -> dict:
         "period": period,
         "start_date": start_date,
         "end_date": end_date
-
     }
 
 
@@ -123,6 +122,8 @@ def backtrader_selector_ui_new() -> dict:
     )
     """
     commission_fee = st.sidebar.number_input("手续费点数", value=2, disabled=True)/100
+    # https://zhuanlan.zhihu.com/p/270871069
+    coc = st.sidebar.checkbox("是否以收盘价成交(否则以下一个开盘价成交)",True)
     checkbox = st.sidebar.checkbox("是否启用滑点")
     slippage = None
     if checkbox:
@@ -140,5 +141,6 @@ def backtrader_selector_ui_new() -> dict:
         #"trade_cash_per": trade_cash_per,
         #"trade_per_time": trade_per_time,
         "commission_fee": commission_fee,
-        "slippage": slippage
+        "slippage": slippage,
+        "coc": coc
     }

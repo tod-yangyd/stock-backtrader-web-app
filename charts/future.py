@@ -3,6 +3,7 @@ import pyecharts.options as opts
 from pyecharts import options as opts
 from pyecharts.charts import Bar, Grid, Kline, Line,HeatMap
 import pandas_ta as ta
+from utils.indicators import calculate_ema
 
 
 def split_data(df: pd.DataFrame):
@@ -33,16 +34,11 @@ def split_data(df: pd.DataFrame):
 def calculate_ma(day_count: int, df: pd.DataFrame):
     return df.rolling(day_count).mean().fillna("-").values.tolist()
 
-def calculate_ema(day_count: int, df: pd.DataFrame):
-    result =  df.ewm(span=day_count,adjust=False).mean()
-    #result = ta.ema(df, length=day_count)
 
-    # 移除前day_count行的不准确数据
-    result = result.iloc[day_count:]
-    return  result.dropna(axis=0, how='any').round(2)
 
 def draw_pro_kline_fut(period:str,ema_params:dict,df: pd.DataFrame):
     x_data, y_data, df_close, y_vol, hm_data, hm_x_data, hm_y_data = split_data(df)
+
 
     # https://blog.csdn.net/qq_57099024/article/details/122030069
     kline = (
@@ -124,7 +120,7 @@ def draw_pro_kline_fut(period:str,ema_params:dict,df: pd.DataFrame):
         .add_xaxis(xaxis_data=x_data[ema_params["ema1"]:])
         .add_yaxis(
             series_name="EMA" + str(ema_params["ema1"]),
-            y_axis=calculate_ema(ema_params["ema1"], df_close),
+            y_axis=calculate_ema(day_count=ema_params["ema1"], close=df_close),
             # 是否平滑显示
             is_smooth=True,
             # 是否开启hover在拐点上的提示动画效果
@@ -141,7 +137,7 @@ def draw_pro_kline_fut(period:str,ema_params:dict,df: pd.DataFrame):
         .add_xaxis(xaxis_data=x_data[ema_params["ema2"]:])
         .add_yaxis(
             series_name="EMA" + str(ema_params["ema2"]),
-            y_axis=calculate_ema(ema_params["ema2"], df_close),
+            y_axis=calculate_ema(day_count=ema_params["ema2"], close=df_close),
             is_smooth=True,
             is_hover_animation=False,
             linestyle_opts=opts.LineStyleOpts(width=2, opacity=1),
@@ -155,7 +151,7 @@ def draw_pro_kline_fut(period:str,ema_params:dict,df: pd.DataFrame):
         .add_xaxis(xaxis_data=x_data[ema_params["ema3"]:])
         .add_yaxis(
             series_name="EMA" + str(ema_params["ema3"]),
-            y_axis=calculate_ema(ema_params["ema3"], df_close),
+            y_axis=calculate_ema(day_count=ema_params["ema3"], close=df_close),
             is_smooth=True,
             is_hover_animation=False,
             linestyle_opts=opts.LineStyleOpts(width=2, opacity=1),
@@ -169,7 +165,7 @@ def draw_pro_kline_fut(period:str,ema_params:dict,df: pd.DataFrame):
         .add_xaxis(xaxis_data=x_data[ema_params["ema4"]:])
         .add_yaxis(
             series_name="EMA" + str(ema_params["ema4"]),
-            y_axis=calculate_ema(ema_params["ema4"], df_close),
+            y_axis=calculate_ema(day_count=ema_params["ema4"], close=df_close),
             is_smooth=True,
             is_hover_animation=False,
             linestyle_opts=opts.LineStyleOpts(width=2, opacity=1),
@@ -215,20 +211,7 @@ def draw_pro_kline_fut(period:str,ema_params:dict,df: pd.DataFrame):
             legend_opts=opts.LegendOpts(is_show=False),
         )
     )
-#hm_data, hm_x_data, hm_y_data
-    position = (
-        HeatMap()
-        .add_xaxis(xaxis_data=hm_x_data)
-        .add_yaxis("",
-                   hm_y_data,
-                   hm_data,
-                   label_opts=opts.LabelOpts(is_show=False))
-        .set_global_opts(
-            title_opts=opts.TitleOpts(title = "主力合约分布月份热力图"),
-            visualmap_opts=opts.VisualMapOpts(),
 
-        )
-    )
 
     # Kline And Line
 
@@ -258,10 +241,25 @@ def draw_pro_kline_fut(period:str,ema_params:dict,df: pd.DataFrame):
     )
 
 
-
     grid_chart_position = Grid(
         init_opts=opts.InitOpts(
             animation_opts=opts.AnimationOpts(animation=False),
+        )
+    )
+
+
+    # hm_data, hm_x_data, hm_y_data
+    position = (
+        HeatMap()
+        .add_xaxis(xaxis_data=hm_x_data)
+        .add_yaxis("",
+                   hm_y_data,
+                   hm_data,
+                   label_opts=opts.LabelOpts(is_show=False))
+        .set_global_opts(
+            title_opts=opts.TitleOpts(title="主力合约分布月份热力图"),
+            visualmap_opts=opts.VisualMapOpts(),
+
         )
     )
 

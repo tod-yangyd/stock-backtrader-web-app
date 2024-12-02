@@ -142,3 +142,7 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+
+
+# testfile
+tmp.py
