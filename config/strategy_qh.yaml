@@ -36,7 +36,7 @@ EMaCross:
     name: trade_config
     type: float
     trade_cash_per: 0.3
-    trade_per_time: 0.3
+    trade_times: 3.0
 
 Test:
   -
@@ -50,5 +50,5 @@ Test:
     name: trade_config
     type: float
     trade_cash_per: 0.3
-    trade_per_time: 0.3
+    trade_times: 3.0
 

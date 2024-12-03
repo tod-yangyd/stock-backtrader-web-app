@@ -12,9 +12,9 @@ class EMaCrossStrategy(BaseStrategy):
         ("emaperiod", {"ema1": 13, "ema2": 13, "ema3": 13, "ema4": 13}),
         ("trade_config",{"trade_cash_per":0.2,"trade_per_time":0.2})
     )
-    trade_log = pd.DataFrame(columns=['datetime', '收盘价', '成交价', '持仓均价', '持仓数', '策略触发原因', '持仓浮盈',
-                                      '总资金'])
-    ema_df = pd.DataFrame(columns=['datetime','EMA1', 'EMA2', 'EMA3', 'EMA4'])
+    trade_log = pd.DataFrame(columns=['datetime', '成交价', '成交量','策略触发原因', '持仓数','持仓均价'])
+
+    ema_df = pd.DataFrame(columns=['datetime','close','EMA1', 'EMA2', 'EMA3', 'EMA4'])
     def __init__(self):
         # Keep a reference to the "close" line in the data[0] dataseries
         print("策略参数： ", self.p.emaperiod,self.p.trade_config["trade_cash_per"], " and ", self.p.trade_config["trade_per_time"])
@@ -52,20 +52,22 @@ class EMaCrossStrategy(BaseStrategy):
 
         #self.ema_cross() = bt.ind.CrossOver(self.ema1, self.data0.ema4[0])
 
-        # 单次下单比例
+        # 下单次数
         self.trade_vol_per_time = self.p.trade_config["trade_per_time"]
-        #最大持仓
-        self.max_volume = int(trade_money/margin)
-        #单次开仓额度
-        self.trade_per_vol = int(self.max_volume * self.p.trade_config["trade_per_time"])
 
-        print("回测系统设置：\n 单次下单比例：",self.trade_vol_per_time,"最大持仓：",self.max_volume,"单次开仓额度：",self.trade_per_vol)
+        #单次开仓额度
+        self.trade_per_vol = int(trade_money / margin / self.p.trade_config["trade_per_time"])
+
+        # 最大持仓
+        self.max_volume = self.trade_per_vol * self.p.trade_config["trade_per_time"]
+
+        print("回测系统设置：\n 下单次数：",self.trade_vol_per_time,"单次开仓额度：",self.trade_per_vol,"最大持仓：",self.max_volume)
 
 
 
         # 触发交易原因
         self.triger_reason = None
-        self.position_code = None
+
 
 
 
@@ -117,8 +119,10 @@ class EMaCrossStrategy(BaseStrategy):
         # 连续建仓信号初始化
         self.consecutive_open = True
 
-        # 止盈损触发信号
+        # 首次止盈损触发信号
         self.first_triger_limit = False
+        # 追加止盈触发信号
+        self.triger_limit = False
         # 建仓收盘价
         #self.last_opened_close = self.data0.lines.close[0]
         # 止盈后跳过第一个bar
@@ -142,14 +146,15 @@ class EMaCrossStrategy(BaseStrategy):
 
         ema_data = [
             [datetime.datetime.combine(self.data0.lines.datetime.date(0), self.data0.lines.datetime.time()),
-            self.data0.ema1[0],
-            self.data0.ema2[0],
-            self.data0.ema3[0],
-            self.data0.ema4[0]
+             self.data0.lines.close[0],
+             self.data0.ema1[0],
+             self.data0.ema2[0],
+             self.data0.ema3[0],
+             self.data0.ema4[0]
              ]
         ]
         ema_frame = pd.DataFrame(ema_data,
-                                  columns=['datetime','EMA1', 'EMA2', 'EMA3', 'EMA4'])
+                                  columns=['datetime','close','EMA1', 'EMA2', 'EMA3', 'EMA4'])
 
         self.ema_df = pd.concat(
             [self.ema_df,ema_frame],
@@ -174,7 +179,7 @@ class EMaCrossStrategy(BaseStrategy):
                 self.order = self.order_target_size_yyd(type='加仓',
                                                         target_size=self.trade_per_vol)
                 self.triger_reason = "金叉，触发开仓"
-                self.position_code = self.data[0]
+
                 self.last_greatest_price =  self.data0.lines.high[0]
                 # self.buy(size=self.trade_per_vol,price=self.data0.lines.close[0])
             elif self.ema_cross()  < 0:
@@ -212,26 +217,27 @@ class EMaCrossStrategy(BaseStrategy):
 
                 # 全部建仓完成以后，开始判断止盈or补仓
                 else:
-
-                    # 止盈条件采集
+                    # 止盈及补仓条件采集
                     if self.getposition().size > 0:
                         # 记录交易后到止盈之间的最优价，以及止盈后下一次止盈区间内的最优价
                         if self.next_greatest_price == 0:
                             self.last_greatest_price = max(self.last_greatest_price, self.data0.lines.high[0])
                         else:
                             self.next_greatest_price = max(self.next_greatest_price, self.data0.lines.high[0])
+                        if self.triger_limit:
+                            # 补仓价格检查
+                            if self.data0.lines.close[0] < self.data0.ema3[0] and not self.allow_cover:
 
-                        # 补仓价格检查
-                        if self.data0.lines.close[0] < self.data0.ema3[0]:
-                            self.allow_cover = True
+                                self.allow_cover = True
                     else:
                         if self.next_greatest_price == 0:
                             self.last_greatest_price = min(self.last_greatest_price, self.data0.lines.low[0])
                         else:
                             self.next_greatest_price = min(self.next_greatest_price, self.data0.lines.low[0])
-
-                        if self.data0.lines.close[0] > self.data0.ema3[0]:
-                            self.allow_cover = True
+                        if self.triger_limit:
+                            if self.data0.lines.close[0] > self.data0.ema3[0] and  not self.allow_cover:
+                                #print(time , "允许触发补仓，此时止盈状态：",self.triger_limit)
+                                self.allow_cover = True
                     # 止盈行情趋势判断
                     if (
                         (self.getposition().size >0 and self.data0.ema1[0] > self.data0.ema2[0] and self.data0.ema2[0] > self.data0.ema3[0] and
@@ -251,37 +257,64 @@ class EMaCrossStrategy(BaseStrategy):
                             if not self.skip_nextbar:
                                 # 如果本轮持仓第一次触发止盈
                                 if not self.first_triger_limit:
-                                    self.triger_reason = ("首次触发止盈,目标仓位：%d, 区间最优价格：%d" %
-                                                          (
-                                                            int(self.getposition().size * (1 - self.trade_vol_per_time)),
-                                                            self.last_greatest_price
-                                                          )
-                                    )
-                                    self.order = self.order_target_size_yyd(
-                                        target_size=int(self.getposition().size * (1 - self.trade_vol_per_time)),
-                                        type='平仓')
+                                    if self.getposition().size >0:
+                                        self.triger_reason = ("首次触发止盈,目标仓位：%d, 区间最优价格：%d" %
+                                                              (
+                                                                self.getposition().size - self.trade_per_vol,
+                                                                self.last_greatest_price
+                                                              )
+                                        )
+                                        self.order = self.order_target_size_yyd(
+                                            target_size=abs(self.getposition().size) - self.trade_per_vol,
+                                            type='平仓')
+                                    else:
+                                        self.triger_reason = ("首次触发止盈,目标仓位：%d, 区间最优价格：%d" %
+                                                              (
+                                                                  self.getposition().size + self.trade_per_vol,
+                                                                  self.last_greatest_price
+                                                              )
+                                                              )
+                                        self.order = self.order_target_size_yyd(
+                                            target_size=self.getposition().size + self.trade_per_vol,
+                                            type='平仓')
                                     self.first_triger_limit = True
                                     self.skip_nextbar = True
                                     # self.last_triger_limit_close = self.data0.lines.close[0]
                                     self.update_next_greatest_price()
+                                    self.triger_limit = True
                                 # 如果满足基本止盈条件
                                 else:
                                     # 检查是否满足AB之间的最高价关系
                                     if ((self.getposition().size > 0 and self.next_greatest_price > self.last_greatest_price) or
                                             (self.getposition().size < 0 and self.next_greatest_price < self.last_greatest_price)):
-                                            self.triger_reason = ("触发追加止盈,目标仓位：%d, 上一个区间最优价格： %d, 本区间最优价格: %d" %
-                                                (
-                                                    int(self.getposition().size * (1 - self.trade_vol_per_time)),
-                                                    self.last_greatest_price,
-                                                    self.next_greatest_price
+                                            if self.getposition().size > 0:
+                                                self.triger_reason = ("触发追加止盈,目标仓位：%d, 上一个区间最优价格： %d, 本区间最优价格: %d" %
+                                                    (
+                                                        self.getposition().size - self.trade_per_vol,
+                                                        self.last_greatest_price,
+                                                        self.next_greatest_price
+                                                    )
                                                 )
-                                            )
-                                            self.order = self.order_target_size_yyd(
-                                                target_size=int(self.getposition().size * (1 - self.trade_vol_per_time)),
-                                                type='平仓')
+                                                self.order = self.order_target_size_yyd(
+                                                    target_size=self.getposition().size - self.trade_per_vol,
+                                                    type='平仓')
+                                            else:
+                                                self.triger_reason = (
+                                                            "触发追加止盈,目标仓位：%d, 上一个区间最优价格： %d, 本区间最优价格: %d" %
+                                                            (
+                                                                self.getposition().size + self.trade_per_vol,
+                                                                self.last_greatest_price,
+                                                                self.next_greatest_price
+                                                            )
+                                                            )
+                                                self.order = self.order_target_size_yyd(
+                                                    target_size=self.getposition().size + self.trade_per_vol,
+                                                    type='平仓')
+
                                             self.skip_nextbar = True
                                             self.last_greatest_price = self.next_greatest_price
                                             self.update_next_greatest_price()
+                                            self.triger_limit = True
                                     # 如果不满足，则不触发追加止盈
                                     else:
                                         self.skip_nextbar = False
@@ -289,12 +322,14 @@ class EMaCrossStrategy(BaseStrategy):
                             else:
                                 self.skip_nextbar = False
                     # 补仓行情趋势判断
-                    elif self.allow_cover and self.first_triger_limit:
+                    if self.allow_cover and  self.triger_limit:
+
                         if (
                                 (self.getposition().size > 0 and self.data0.lines.close[0] > self.data0.ema3[0])
                                 or
                                 (self.getposition().size < 0 and self.data0.lines.close[0] < self.data0.ema3[0])
                         ) and abs(self.getposition().size) < self.max_volume:
+
                             if self.getposition().size > 0:
                                 self.order = self.order_target_size_yyd(target_size=self.max_volume, type='加仓')
                             else:
@@ -302,6 +337,9 @@ class EMaCrossStrategy(BaseStrategy):
                             # self.last_opened_close = self.data0.lines.close[0]
                             self.triger_reason = "触发补仓"
                             self.allow_cover = False
+                            self.triger_limit = False
+                            
+                            
             # 反向开仓
             else:
                 #print("************触发反向开仓")
@@ -319,11 +357,17 @@ class EMaCrossStrategy(BaseStrategy):
 
 
 
+
+
     def notify_order(self, order):
+
         if order.status in [order.Submitted, order.Accepted]:
             # Buy/Sell order submitted/accepted to/by broker - Nothing to do
 
             return
+
+
+
 
         # Check if an order has been completed
         # Attention: broker could reject order if not enough cash
@@ -341,29 +385,47 @@ class EMaCrossStrategy(BaseStrategy):
                     "SELL EXECUTED, Price: %.2f, Cost: %.2f, Comm %.2f"
                     % (order.executed.price, order.executed.value, order.executed.comm)
                 )
-
             pos = self.getposition()
+            # 通过order获取当天信息
+            # https://blog.csdn.net/weixin_44785098/article/details/122746561
+            #time = datetime.datetime.combine(self.data0.lines.datetime.date(0), self.data0.lines.datetime.time())
+            time = bt.num2date(order.executed.dt)
             trade_data = [
                 [
-                    datetime.datetime.combine(self.data0.lines.datetime.date(0), self.data0.lines.datetime.time()),
-                    # pos.adjbase
-                    self.data0.lines.close[0],
+                    # 成交时间
+                    bt.num2date(order.executed.dt),
+                    # 成交价
                     order.executed.price,
-                    pos.price,
-                    pos.size,
+                    # 成交量
+                    order.executed.size,
+                    # 策略触发原因
                     self.triger_reason,
-                    pos.size * (pos.adjbase - pos.price) * self.contract_mult,
-                    self.broker.getvalue()
+                    # 持仓量
+                    pos.size,
+                    # 持仓均价
+                    pos.price
+
+
                 ]
             ]
-            data_frame = pd.DataFrame(trade_data,
-                                      columns=['datetime', '收盘价', '成交价', '持仓均价', '持仓数', '策略触发原因',
-                                               '持仓浮盈',
-                                               '总资金'])
+            """
+            # 持仓浮盈
+            pos.size * (pos.adjbase - pos.price) * self.contract_mult,
+            # 总资金
+            self.broker.getvalue()
+            """
+
+            data_frame1 = pd.DataFrame(trade_data,
+                                      columns=['datetime', '成交价', '成交量','策略触发原因',
+                                                '持仓数','持仓均价'
+                                               ])
+
+
 
             self.trade_log = pd.concat(
-                [self.trade_log, data_frame],
+                [self.trade_log, data_frame1],
                 ignore_index=True)
+
 
 
 

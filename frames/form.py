@@ -40,10 +40,11 @@ def params_selector_ui_new(params: dict) -> dict:
                                                      step=0.1,
                                                      max_value=1.0)
                 with trade_per_time:
-                    trade_per_time = st.number_input("单次下单手数占交易资金占比",
-                                                     value=param["trade_per_time"],
-                                                     step=0.1,
-                                                     max_value=1.0)
+                    trade_per_time = st.number_input("连续下单次数",
+                                                     value=param["trade_times"],
+                                                     step=1.0,
+                                                     min_value=1.0
+                                                     )
 
                 params_parse[param["name"]] = dict(trade_cash_per=trade_cash_per,
                                                    trade_per_time=trade_per_time)

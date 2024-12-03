@@ -13,7 +13,7 @@ def calculate_ema(day_count: int, close: pd.DataFrame):
     # result = ta.ema(df, length=day_count)
     # 移除前day_count行的不准确数据
     #result = result.iloc[day_count:]
-    print ("生成范围",day_count, " 生成成果： ",result.dropna(axis=0, how='any').round(2))
+    #print ("生成范围",day_count, " 生成成果： ",result.dropna(axis=0, how='any').round(2))
     return result.dropna(axis=0, how='any').round(2)
 
 

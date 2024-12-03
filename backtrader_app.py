@@ -65,16 +65,15 @@ def main_new():
         #print(calculate_ema(day_count=120,close=close_df))
         last_close = future_df["close"][-1]
         margin = last_close*margin_buy*contract_multiplier
+        call_per = int(backtrader_params["start_cash"] * params["trade_config"]["trade_cash_per"] / margin /  params["trade_config"]["trade_per_time"])
+
         with col2:
             st.text_area("策略的参数信息",
-                         '初始交易资金: %(money)i \n单笔保证金大约： %(margins)i \n最大持仓数: %(max_volume)i \n单次下单手数： %(volume)i' %
+                         '初始交易资金: %(money)i \n单笔保证金大约： %(margins)i  \n单次下单手数（向下取整）： %(volume)i \n最大持仓数: %(max_volume)i' %
                          {"money": backtrader_params["start_cash"] * params["trade_config"]["trade_cash_per"],
                           "margins": margin,
-                          "max_volume": int(
-                              backtrader_params["start_cash"] * params["trade_config"]["trade_cash_per"] / margin),
-                          "volume": int(
-                              backtrader_params["start_cash"] * params["trade_config"]["trade_cash_per"] / margin *
-                              params["trade_config"]["trade_per_time"])},
+                          "volume": call_per,
+                          "max_volume": call_per * params["trade_config"]["trade_per_time"]},
                          height=150
                          )
 
@@ -99,13 +98,13 @@ def main_new():
             }
         )
         par_df,ema_df = run_backtrader_new(**backtrader_params)
-
-        st.subheader("策略结果&回测系统EMA值记录", divider=True)
-        col_res, col_ema = st.columns(2)
-        with col_res:
-            st.dataframe(par_df, height=500, hide_index=True)
-        with col_ema:
-            st.dataframe(ema_df, height=500, hide_index=True)
+        ema_df.set_index('datetime',inplace=True)
+        par_df.set_index('datetime',inplace=True)
+        print(par_df['成交量'])
+        result = pd.concat([ema_df,par_df],axis=1)
+        st.subheader("策略结果", divider=True)
+        #st.dataframe(par_df, height=500, hide_index=True)
+        st.dataframe(result,width=1600, hide_index=False)
 
 
 

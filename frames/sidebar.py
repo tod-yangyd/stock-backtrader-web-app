@@ -56,7 +56,7 @@ def jqshare_selector_ui() -> dict:
         symbol = st.sidebar.text_input("合约名称（ex. FG）")
     else:
         symbol = st.sidebar.text_input("合约名称（ex. fg2501）")
-    period = st.sidebar.selectbox("行情数据间隔", ("15m","1m","5m"))
+    period = st.sidebar.selectbox("行情数据间隔", ("15m","1m","5m","60m"))
     start_date = st.sidebar.date_input("start date(试用版最早获取15个月以来的数据)",datetime.date.today() -datetime.timedelta(days=15*31),
                                        min_value=datetime.date.today() -datetime.timedelta(days=15*31))
     end_date = st.sidebar.date_input("end date(试用版最多获取3个月前的数据)",datetime.date.today() -datetime.timedelta(days=3*31),
