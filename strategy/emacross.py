@@ -233,94 +233,105 @@ class EMaCrossStrategy(BaseStrategy):
                             if self.data0.lines.close[0] > self.data0.ema3[0] and not self.allow_cover:
                                 # print(time , "允许触发补仓，此时止盈状态：",self.triger_limit)
                                 self.allow_cover = True
-                    # 止盈行情趋势判断
-                    if (
-                            (self.getposition().size > 0 and self.data0.ema1[0] > self.data0.ema2[0] and
-                             self.data0.ema2[0] > self.data0.ema3[0] and
-                             self.data0.ema3[0] > self.data0.ema4[0])
-                            or
-                            (self.getposition().size < 0 and self.data0.ema1[0] < self.data0.ema2[0] and
-                             self.data0.ema2[0] < self.data0.ema3[0] and
-                             self.data0.ema3[0] < self.data0.ema4[0])
-                    ):
+                    if not self.skip_nextbar:
+                        # 止盈行情趋势判断
+                       if (
+                               (
+                                       self.getposition().size > 0 and self.data0.ema1[0] > self.data0.ema2[0] >
+                                       self.data0.ema3[0] > self.data0.ema4[0])
+                               or
+                               (
+                                       self.getposition().size < 0 and self.data0.ema1[0] < self.data0.ema2[0] <
+                                       self.data0.ema3[0] < self.data0.ema4[0])
+                       ):
 
-                        # 趋势行情下，收盘价穿过ema2，进入止盈判断逻辑
-                        if (
-                                (self.getposition().size > 0 and self.data0.lines.close[0] < self.data0.ema2[0])
-                                or
-                                (self.getposition().size < 0 and self.data0.lines.close[0] > self.data0.ema2[0])
-                        ):
-                            # 检查触发过止盈，需要跳过这个bar
-                            if not self.skip_nextbar:
-                                # 如果本轮持仓第一次触发止盈
-                                if not self.first_triger_limit:
-                                    if self.getposition().size > 0:
-                                        self.triger_reason = ("首次触发止盈,目标仓位：%d, 区间最优价格：%d" %
-                                                              (
-                                                                  self.getposition().size - self.trade_per_vol,
-                                                                  self.last_greatest_price
-                                                              )
-                                                              )
-                                        self.order = self.order_target_size_yyd(
-                                            target_size=abs(self.getposition().size) - self.trade_per_vol,
-                                            type='平仓')
-                                    else:
-                                        self.triger_reason = ("首次触发止盈,目标仓位：%d, 区间最优价格：%d" %
-                                                              (
-                                                                  self.getposition().size + self.trade_per_vol,
-                                                                  self.last_greatest_price
-                                                              )
-                                                              )
-                                        self.order = self.order_target_size_yyd(
-                                            target_size=self.getposition().size + self.trade_per_vol,
-                                            type='平仓')
-                                    self.first_triger_limit = True
-                                    self.skip_nextbar = True
-                                    # self.last_triger_limit_close = self.data0.lines.close[0]
-                                    self.update_next_greatest_price()
-                                    self.triger_limit = True
-                                # 如果满足基本止盈条件
-                                else:
-                                    # 检查是否满足AB之间的最高价关系
-                                    if ((
-                                            self.getposition().size > 0 and self.next_greatest_price > self.last_greatest_price) or
-                                            (
-                                                    self.getposition().size < 0 and self.next_greatest_price < self.last_greatest_price)):
-                                        if self.getposition().size > 0:
-                                            self.triger_reason = (
-                                                        "触发追加止盈,目标仓位：%d, 上一个区间最优价格： %d, 本区间最优价格: %d" %
-                                                        (
-                                                            self.getposition().size - self.trade_per_vol,
-                                                            self.last_greatest_price,
-                                                            self.next_greatest_price
-                                                        )
-                                                        )
-                                            self.order = self.order_target_size_yyd(
-                                                target_size=self.getposition().size - self.trade_per_vol,
-                                                type='平仓')
-                                        else:
-                                            self.triger_reason = (
-                                                    "触发追加止盈,目标仓位：%d, 上一个区间最优价格： %d, 本区间最优价格: %d" %
-                                                    (
-                                                        self.getposition().size + self.trade_per_vol,
-                                                        self.last_greatest_price,
-                                                        self.next_greatest_price
-                                                    )
-                                            )
-                                            self.order = self.order_target_size_yyd(
-                                                target_size=self.getposition().size + self.trade_per_vol,
-                                                type='平仓')
+                           # 趋势行情下，收盘价穿过ema2，进入止盈判断逻辑
+                           if (
+                                   (self.getposition().size > 0 and self.data0.lines.close[0] < self.data0.ema2[0])
+                                   or
+                                   (self.getposition().size < 0 and self.data0.lines.close[0] > self.data0.ema2[0])
+                           ):
+                               # 如果本轮持仓第一次触发止盈
+                               if not self.first_triger_limit:
+                                   if self.getposition().size > 0:
+                                       self.triger_reason = ("首次触发止盈,目标仓位：%d, 区间最优价格：%d" %
+                                                             (
+                                                                 self.getposition().size - self.trade_per_vol,
+                                                                 self.last_greatest_price
+                                                             )
+                                                             )
+                                       self.order = self.order_target_size_yyd(
+                                           target_size=abs(self.getposition().size) - self.trade_per_vol,
+                                           type='平仓')
+                                   else:
+                                       self.triger_reason = ("首次触发止盈,目标仓位：%d, 区间最优价格：%d" %
+                                                             (
+                                                                 self.getposition().size + self.trade_per_vol,
+                                                                 self.last_greatest_price
+                                                             )
+                                                             )
+                                       self.order = self.order_target_size_yyd(
+                                           target_size=self.getposition().size + self.trade_per_vol,
+                                           type='平仓')
+                                   self.first_triger_limit = True
+                                   self.skip_nextbar = True
+                                   # self.last_triger_limit_close = self.data0.lines.close[0]
+                                   self.update_next_greatest_price()
+                                   self.triger_limit = True
+                               # 如果满足基本止盈条件
+                               else:
+                                   # 检查是否满足AB之间的最高价关系
+                                   if ((
+                                           self.getposition().size > 0 and self.next_greatest_price > self.last_greatest_price) or
+                                           (
+                                                   self.getposition().size < 0 and self.next_greatest_price < self.last_greatest_price)):
+                                       if self.getposition().size > 0:
+                                           self.triger_reason = (
+                                                   "触发追加止盈,目标仓位：%d, 上一个区间最优价格： %d, 本区间最优价格: %d" %
+                                                   (
+                                                       self.getposition().size - self.trade_per_vol,
+                                                       self.last_greatest_price,
+                                                       self.next_greatest_price
+                                                   )
+                                           )
+                                           self.order = self.order_target_size_yyd(
+                                               target_size=self.getposition().size - self.trade_per_vol,
+                                               type='平仓')
+                                       else:
+                                           self.triger_reason = (
+                                                   "触发追加止盈,目标仓位：%d, 上一个区间最优价格： %d, 本区间最优价格: %d" %
+                                                   (
+                                                       self.getposition().size + self.trade_per_vol,
+                                                       self.last_greatest_price,
+                                                       self.next_greatest_price
+                                                   )
+                                           )
+                                           self.order = self.order_target_size_yyd(
+                                               target_size=self.getposition().size + self.trade_per_vol,
+                                               type='平仓')
 
-                                        self.skip_nextbar = True
-                                        self.last_greatest_price = self.next_greatest_price
-                                        self.update_next_greatest_price()
-                                        self.triger_limit = True
-                                    # 如果不满足，则不触发追加止盈
-                                    else:
-                                        self.skip_nextbar = False
-                                        self.update_next_greatest_price()
-                            else:
-                                self.skip_nextbar = False
+                                       self.skip_nextbar = True
+                                       self.last_greatest_price = self.next_greatest_price
+                                       self.update_next_greatest_price()
+                                       self.triger_limit = True
+                                   # 如果不满足，则不触发追加止盈
+                                   else:
+                                       self.skip_nextbar = False
+                                       self.update_next_greatest_price()
+                                       time = datetime.datetime.combine(self.data0.lines.datetime.date(0),
+                                                                        self.data0.lines.datetime.time())
+                                       print(time, self.data0.lines.close[0],
+                                             "满足基本止盈条件，但是上一个最大价格区间（%(last)i）与 本轮价格区间（%(next)i）比较不满足条件" % {
+                                                 "last": self.last_greatest_price, "next": self.next_greatest_price}
+                                             )
+                    else:
+                        self.skip_nextbar = False
+
+
+
+
+
+
                     # 补仓行情趋势判断
                     if self.allow_cover and self.triger_limit:
 
@@ -382,6 +393,7 @@ class EMaCrossStrategy(BaseStrategy):
             # https://blog.csdn.net/weixin_44785098/article/details/122746561
             # time = datetime.datetime.combine(self.data0.lines.datetime.date(0), self.data0.lines.datetime.time())
             time = bt.num2date(order.executed.dt)
+
             trade_data = [
                 [
                     # 成交时间
