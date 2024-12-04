@@ -121,7 +121,7 @@ def backtrader_selector_ui_new() -> dict:
         "单次下单资金占比", min_value=0.1, value=0.3, step=0.1,max_value=1.0
     )
     """
-    commission_fee = st.sidebar.number_input("手续费点数", value=2, disabled=True)/100
+    #commission_fee = st.sidebar.number_input("手续费点数", value=2, disabled=True)/100
     # https://zhuanlan.zhihu.com/p/270871069
     coc = st.sidebar.checkbox("是否以收盘价成交(否则以下一个开盘价成交)",True)
     checkbox = st.sidebar.checkbox("是否启用滑点")
@@ -140,7 +140,7 @@ def backtrader_selector_ui_new() -> dict:
         "start_cash": start_cash,
         #"trade_cash_per": trade_cash_per,
         #"trade_per_time": trade_per_time,
-        "commission_fee": commission_fee,
+        #"commission_fee": commission_fee,
         "slippage": slippage,
         "coc": coc
     }

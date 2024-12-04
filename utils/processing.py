@@ -41,7 +41,7 @@ def gen_future_df(jq_params: dict) -> tuple:
     jqdata = JQSDK.Future_Method()
 
 
-    (margin_buy, contract_multiplier) = jqdata.get_commissionandmargin(fut_code=jq_params['symbol'], date=jq_params['end_date'],
+    (margin_buy, contract_multiplier,comm_info) = jqdata.get_commissionandmargin(fut_code=jq_params['symbol'], date=jq_params['end_date'],
                                                                        market_type=jq_params['market_type'])
     res = pd.DataFrame(columns=['open', 'high', 'low', 'close', 'volume', 'openinterest', 'code'])
     if jq_params['market_type'] =="主力连续":
@@ -66,7 +66,7 @@ def gen_future_df(jq_params: dict) -> tuple:
     df = jqdata.get_fut_data(ft_code=jq_params['symbol'], unit=jq_params['period'], start_dt=jq_params['start_date'],
                              end_dt=jq_params['end_date'])
     """
-    return res,margin_buy/100,contract_multiplier
+    return res,margin_buy/100,contract_multiplier,comm_info
 
 
 @st.cache_data
@@ -171,11 +171,13 @@ def run_backtrader_new(
     start_date: datetime.datetime,
     end_date: datetime.datetime,
     start_cash: int,
-    commission_fee: float,
+    #commission_fee: float,
     slippage: float,
     coc: bool,
     margin_buy: int,
     contract_multiplier: int,
+    comm_unit: str,
+    comm_charge: float,
     _strategy: StrategyBase,
 ) -> pd.DataFrame:
     """run backtrader
@@ -185,9 +187,13 @@ def run_backtrader_new(
         start_date (datetime.datetime): back trader from date
         end_date (datetime.datetime): back trader end date
         start_cash (int): back trader start cash
-        commission_fee (float): commission fee
-        trade_cash_per (int): 实际交易资金占比
-        trade_per_time (float): 每次交易资金占实际资金占比
+
+        slippage: 滑点设置
+        coc: 作弊成交设置
+        margin_buy: 保证金比例设置
+        contract_multiplier: 合约系数设置
+        comm_unit: 手续费单位设置
+        comm_charge: 手续费比例设置
         _strategy (StrategyBase): strategy name  params
 
     Returns:
@@ -216,14 +222,22 @@ def run_backtrader_new(
 
     cerebro = bt.Cerebro()
     cerebro.broker.set_coc(coc)
-    cerebro.broker.setcommission(commission=commission_fee, #交易手续费
-                                 stocklike=False, #股票则填True
-                                 commtype=bt.CommInfoBase.COMM_PERC,# 按比例收手续费
-
-                                 margin= margin_buy,    #保证金比例
-                                 mult= contract_multiplier, #杠杆倍率
-                                 automargin=True #按比例计算保证金
-                                 )
+    if comm_unit =="‱":
+        cerebro.broker.setcommission(commission=comm_charge/10000, #交易手续费
+                                     stocklike=False, #股票则填True
+                                     commtype=bt.CommInfoBase.COMM_PERC,# 比例收手续费
+                                     margin= margin_buy,    #保证金比例
+                                     mult= contract_multiplier, #杠杆倍率
+                                     automargin=True #按比例计算保证金
+                                     )
+    else:
+        cerebro.broker.setcommission(commission=comm_charge,  # 交易手续费
+                                     stocklike=False,  # 股票则填True
+                                     commtype=bt.CommInfoBase.COMM_FIXED,  # 固定手续费
+                                     margin=margin_buy,  # 保证金比例
+                                     mult=contract_multiplier,  # 杠杆倍率
+                                     automargin=True  # 按比例计算保证金
+                                     )
     print("backtrader滑点设置：", slippage)
     # 是否滑点
     if slippage:
@@ -245,6 +259,8 @@ def run_backtrader_new(
     #如果希望多策略参数多次执行，用optstrategy
     #cerebro.optstrategy(strategy_cli, **_strategy.params)
     results = cerebro.run(optreturn=False)
+
+    fund_res = {"总资金":cerebro.broker.get_value(),"总手续费":results[0].comm_all}
 
 
 
@@ -272,4 +288,4 @@ def run_backtrader_new(
     columns.extend(["return", "dd", "sharpe"])
     par_df = pd.DataFrame(par_list, columns=columns)
     """
-    return back_df,ema_df
+    return back_df,ema_df,fund_res

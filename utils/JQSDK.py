@@ -11,10 +11,11 @@ class Future_Method():
 
 
 
-    def get_commissionandmargin(self,fut_code, date,market_type):
+
+    def get_commissionandmargin(self,fut_code, date,market_type='单品种'):
         """
         获取品种的保证金和合约系数信息
-        :param ft_code:
+        :param ft_code: 'fg2501' or 'fg'
         :param unit: '1m' or '60m' or 'daily'
         :param start_dt: '2024-01-01 00:00:00'
         :param end_dt: '2024-07-01 00:00:00'
@@ -32,12 +33,29 @@ class Future_Method():
                 finance.FUT_MARGIN.code == jq_code
             ).limit(1)
         )
+
+        comm_query = finance.run_query(
+            query(
+                finance.FUT_CHARGE.day,finance.FUT_CHARGE.unit, finance.FUT_CHARGE.clearance_charge,
+                finance.FUT_CHARGE.opening_charge).filter(
+
+                finance.FUT_CHARGE.code == jq_code
+                                                  )
+
+        )
+        comm_info = {
+            'comm_unit': comm_query['unit'][0],
+            'comm_charge': comm_query['clearance_charge'][0]
+        }
+
         margin_buy = fut_infos['specul_buy_margin_rate'][0]
 
         future_info = get_futures_info(jq_code)
 
         contract_multiplier = future_info[jq_code]['contract_multiplier']
-        return (margin_buy, contract_multiplier)
+        return (margin_buy, contract_multiplier,comm_info)
+
+
 
 
     def get_fut_data_single(self,ft_code='FG2501', unit='60m', start_dt='2024-01-01 00:00:00',

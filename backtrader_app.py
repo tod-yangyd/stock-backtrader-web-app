@@ -60,7 +60,7 @@ def main_new():
         submitted, params = params_selector_ui_new(strategy[name])
     if jq_params["symbol"] and submitted:
 
-        (future_df, margin_buy, contract_multiplier) = gen_future_df(jq_params)
+        (future_df, margin_buy, contract_multiplier,comm_info) = gen_future_df(jq_params)
 
         #print(calculate_ema(day_count=120,close=close_df))
         last_close = future_df["close"][-1]
@@ -76,17 +76,7 @@ def main_new():
                           "max_volume": call_per * params["trade_config"]["trade_per_time"]},
                          height=150
                          )
-
-
         future_df=merge_ema(future_df,params["emaperiod"])
-
-
-        st.subheader("Kline")
-        (kline,positon) = draw_pro_kline_fut(period=jq_params["period"], ema_params=params["emaperiod"], df=future_df)
-        st_pyecharts(kline, height="600px")
-        if jq_params["market_type"] =="主力连续":
-            st_pyecharts(positon)
-
         LOGGER.info(f"jq_config: {jq_params}")
         LOGGER.info(f"backtrader_config: {backtrader_params}")
         backtrader_params.update(
@@ -95,16 +85,34 @@ def main_new():
                 "_strategy": StrategyBase(name=name, params=params),
                 "margin_buy": margin_buy,
                 "contract_multiplier": contract_multiplier,
+                "comm_unit": comm_info["comm_unit"],
+                "comm_charge": comm_info["comm_charge"]
+
             }
         )
-        par_df,ema_df = run_backtrader_new(**backtrader_params)
+        par_df,ema_df,fund_res = run_backtrader_new(**backtrader_params)
         ema_df.set_index('datetime',inplace=True)
         par_df.set_index('datetime',inplace=True)
-        print(par_df['成交量'])
+
         result = pd.concat([ema_df,par_df],axis=1)
+
+        st.subheader("Kline")
+        (kline, positon) = draw_pro_kline_fut(period=jq_params["period"], ema_params=params["emaperiod"], df=future_df)
+        st_pyecharts(kline, height="600px")
+        if jq_params["market_type"] == "主力连续":
+            st_pyecharts(positon)
+
         st.subheader("策略结果", divider=True)
-        #st.dataframe(par_df, height=500, hide_index=True)
-        st.dataframe(result,width=1600, hide_index=False)
+        res1, res2 = st.columns(2)
+        with res1:
+            st.dataframe(result,width=1200, hide_index=False)
+        with res2:
+            st.text_area("策略运行结果",
+                         '交易后总资金: %(money)i \n总手续费： %(comm)i' %
+                         {"money": fund_res["总资金"],
+                          "comm": fund_res["总手续费"]},
+                         height=150
+                         )
 
 
 
