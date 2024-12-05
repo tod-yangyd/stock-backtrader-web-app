@@ -267,7 +267,7 @@ def run_backtrader_new(
 
 
 
-    back_df = results[0].trade_log
+    trade_df = results[0].trade_log
     ema_df = results[0].ema_df
 
     """
@@ -288,4 +288,4 @@ def run_backtrader_new(
     columns.extend(["return", "dd", "sharpe"])
     par_df = pd.DataFrame(par_list, columns=columns)
     """
-    return back_df,ema_df,fund_res
+    return trade_df,ema_df,fund_res

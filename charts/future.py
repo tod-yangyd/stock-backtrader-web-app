@@ -1,44 +1,63 @@
 import pandas as pd
 import pyecharts.options as opts
 from pyecharts import options as opts
-from pyecharts.charts import Bar, Grid, Kline, Line,HeatMap
+from pyecharts.charts import Bar, Grid, Kline, Line,HeatMap,Scatter
 import pandas_ta as ta
 from utils.indicators import calculate_ema
 
 
-def split_data(df: pd.DataFrame):
+def _split_data(df: pd.DataFrame):
     x_data = df.index.strftime("%Y-%m-%d %H:%M:%S").tolist()
     y_data = df[["open", "close", "low", "high"]].values.tolist()
     df_close = df["close"]
 
+    # 成交量相关
     df_remake =df.reset_index(drop=True)
-
     df_remake["index"] = df_remake.index
     df_remake["rise"] = df_remake[["open", "close"]].apply(lambda x: 1 if x[0] > x[1] else -1, axis=1)
     y_vol = df_remake[["index", "volume", "rise"]].values.tolist()
     #print("成交量数据： ",y_vol)
 
+    # 主力合约热力图相关
     # 索引重置并转为date格式，方便统计
     res = df.reset_index()
     res["index"] = pd.to_datetime(res["index"]).dt.date
     # 按日期和合约品种计数,按索引排序（默认按值排序）,并转为list输出
     count_df = res[['index', 'code']].value_counts(sort=False).sort_index().reset_index()
-
     hm_data = count_df.values.tolist()
     hm_x_data = count_df['index'].tolist()
     hm_y_data = count_df['code'].unique().tolist()
 
     return x_data, y_data, df_close, y_vol, hm_data, hm_x_data, hm_y_data
 
-
-def calculate_ma(day_count: int, df: pd.DataFrame):
-    return df.rolling(day_count).mean().fillna("-").values.tolist()
-
-
-
-def draw_pro_kline_fut(period:str,ema_params:dict,df: pd.DataFrame):
-    x_data, y_data, df_close, y_vol, hm_data, hm_x_data, hm_y_data = split_data(df)
-
+def _split_result(df: pd.DataFrame):
+    result_datatime = df.index.strftime("%Y-%m-%d %H:%M:%S").tolist()
+    open = df.query("策略触发类型=='开仓'")["成交价"]
+    re_open = df.query("策略触发类型=='反向开仓'")["成交价"]
+    stop = df.query("策略触发类型=='止盈'")["成交价"]
+    cover = df.query("策略触发类型=='补仓'")["成交价"]
+    #cover_res = df.query("策略触发类型=='补仓'")["成交价"].values.tolist()
+    t0=df["成交价"]
+    t3 = pd.concat(
+        [t0, open,re_open,stop,cover],
+        axis=1,
+        ignore_index=False)
+    t3.columns=['成交价','开仓','反向开仓','止盈','补仓']
+    open_res = t3['开仓'].values.tolist()
+    re_open_res= t3['反向开仓'].values.tolist()
+    stop_res= t3['止盈'].values.tolist()
+    cover_res= t3['补仓'].values.tolist()
+    return result_datatime,open_res,re_open_res,stop_res,cover_res
+def draw_pro_kline_fut(period,ema_params,future_df,result_df):
+    """
+    Args:
+        period (str): 行情间隔
+        ema_params (dict): ema的参数
+        future_df (dataframe): 行情数据
+        result_df (dataframe): 交易及ema数据
+    """
+    x_data, y_data, df_close, y_vol, hm_data, hm_x_data, hm_y_data = _split_data(future_df)
+    x_Scatter,open_res,re_open_res,stop_res,cover_res = _split_result(result_df)
 
     # https://blog.csdn.net/qq_57099024/article/details/122030069
     kline = (
@@ -52,7 +71,7 @@ def draw_pro_kline_fut(period:str,ema_params:dict,df: pd.DataFrame):
         .set_global_opts(
             # 图例配置项
             legend_opts=opts.LegendOpts(
-                is_show=False, pos_bottom=10, pos_left="center"
+                is_show=True, pos_bottom=10, pos_left="center"
             ),
             # 区域缩放组件
             datazoom_opts=[
@@ -60,16 +79,16 @@ def draw_pro_kline_fut(period:str,ema_params:dict,df: pd.DataFrame):
                     is_show=False,
                     type_="inside",
                     xaxis_index=[0, 1],
-                    range_start=98,
-                    range_end=100,
+                    range_start=0,
+                    range_end=2,
                 ),
                 opts.DataZoomOpts(
                     is_show=True,
                     xaxis_index=[0, 1],
                     type_="slider",
                     pos_top="85%",
-                    range_start=98,
-                    range_end=100,
+                    range_start=0,
+                    range_end=2,
                 ),
             ],
             # 坐标轴配置
@@ -92,7 +111,7 @@ def draw_pro_kline_fut(period:str,ema_params:dict,df: pd.DataFrame):
             visualmap_opts=opts.VisualMapOpts(
                 is_show=False,
                 dimension=2,
-                series_index=5,
+                series_index=9,
                 is_piecewise=True,
                 pieces=[
                     {"value": 1, "color": "#00da3c"},
@@ -145,7 +164,7 @@ def draw_pro_kline_fut(period:str,ema_params:dict,df: pd.DataFrame):
             label_opts=opts.LabelOpts(is_show=False),
             itemstyle_opts=opts.ItemStyleOpts(color='green'),
         )
-        .set_global_opts(xaxis_opts=opts.AxisOpts(type_="category"))
+
     )
     ema_line_3 = (
         Line()
@@ -159,7 +178,7 @@ def draw_pro_kline_fut(period:str,ema_params:dict,df: pd.DataFrame):
             label_opts=opts.LabelOpts(is_show=False),
             itemstyle_opts=opts.ItemStyleOpts(color='purple'),
         )
-        .set_global_opts(xaxis_opts=opts.AxisOpts(type_="category"))
+
     )
     ema_line_4 = (
         Line()
@@ -173,7 +192,7 @@ def draw_pro_kline_fut(period:str,ema_params:dict,df: pd.DataFrame):
             label_opts=opts.LabelOpts(is_show=False),
             itemstyle_opts=opts.ItemStyleOpts(color='blue'),
         )
-        .set_global_opts(xaxis_opts=opts.AxisOpts(type_="category"))
+
     )
     # 成交量柱状图
     bar = (
@@ -213,6 +232,44 @@ def draw_pro_kline_fut(period:str,ema_params:dict,df: pd.DataFrame):
         )
     )
 
+    open_scatter = (
+        Scatter()
+        .add_xaxis(xaxis_data=x_Scatter)
+        .add_yaxis(
+            series_name= "开仓",
+            y_axis=open_res,
+            symbol_size=15,
+            symbol='triangle',
+            itemstyle_opts=opts.ItemStyleOpts(color='orange')
+            )
+        .add_yaxis(
+            series_name="反向开仓",
+            y_axis=re_open_res,
+            symbol_size=15,
+            symbol='triangle',
+            itemstyle_opts=opts.ItemStyleOpts(color='black')
+        )
+        .add_yaxis(
+            series_name="止盈",
+            y_axis=stop_res,
+            symbol_size=15,
+            symbol='triangle',
+            itemstyle_opts=opts.ItemStyleOpts(color='blue')
+        )
+        .add_yaxis(
+            series_name="补仓",
+            y_axis=cover_res,
+            symbol_size=15,
+            symbol='circle',
+            itemstyle_opts=opts.ItemStyleOpts(color='purple')
+        )
+        # 禁止展示金额
+        .set_series_opts(label_opts=opts.LabelOpts(is_show=False))
+        # 禁止展示图例
+        .set_global_opts(legend_opts=opts.LegendOpts(is_show=True))
+    )
+
+
 
     # Kline And Line
 
@@ -220,6 +277,8 @@ def draw_pro_kline_fut(period:str,ema_params:dict,df: pd.DataFrame):
     overlap_kline_line = overlap_kline_line.overlap(ema_line_2)
     overlap_kline_line = overlap_kline_line.overlap(ema_line_3)
     overlap_kline_line = overlap_kline_line.overlap(ema_line_4)
+    overlap_kline_line = overlap_kline_line.overlap(open_scatter)
+
 
     # Grid Overlap + Bar
 

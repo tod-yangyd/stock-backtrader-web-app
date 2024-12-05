@@ -90,14 +90,14 @@ def main_new():
 
             }
         )
-        par_df,ema_df,fund_res = run_backtrader_new(**backtrader_params)
+        trade_df,ema_df,fund_res = run_backtrader_new(**backtrader_params)
         ema_df.set_index('datetime',inplace=True)
-        par_df.set_index('datetime',inplace=True)
+        trade_df.set_index('datetime',inplace=True)
 
-        result = pd.concat([ema_df,par_df],axis=1)
+        result = pd.concat([ema_df,trade_df],axis=1)
 
         st.subheader("Kline")
-        (kline, positon) = draw_pro_kline_fut(period=jq_params["period"], ema_params=params["emaperiod"], df=future_df)
+        (kline, positon) = draw_pro_kline_fut(period=jq_params["period"], ema_params=params["emaperiod"], future_df=future_df,result_df=result)
         st_pyecharts(kline, height="600px")
         if jq_params["market_type"] == "主力连续":
             st_pyecharts(positon)
